@@ -1,6 +1,6 @@
 # GDL Tagging Decomposition
 
-Decomposes multi-copy trees in newick format using various methods based of tagging.
+Python script for decomposing multi-copy trees in newick format using various methods based of tagging.
 
 ## Dependencies
 
