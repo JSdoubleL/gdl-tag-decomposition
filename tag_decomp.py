@@ -1,5 +1,7 @@
 import treeswift
 import argparse
+import random
+import copy
 
 def unroot(tree):
     """
@@ -12,6 +14,8 @@ def unroot(tree):
 
     Returns unrooted treeswift tree
     """
+    if tree.root == None:
+        return tree
     if tree.root.num_children() == 2:
         [left, right] = tree.root.child_nodes()
         if not right.is_leaf():
@@ -123,6 +127,7 @@ def tag(tree, delimiter=None):
     """
     tree.suppress_unifurcations()
     tree.resolve_polytomies()
+    tree.n_dup = 0
     for node in tree.traverse_postorder():
         if node.is_leaf():
             node.s = set([node.get_label().split(delimiter)[0]])
@@ -135,6 +140,7 @@ def tag(tree, delimiter=None):
                 node.tag = 'S'
             else: 
                 node.tag = 'D'
+                tree.n_dup += 1
 
 
 def decompose(tree, max_only=False, no_subsets=False):
@@ -192,6 +198,45 @@ def trim(tree):
     return tree
 
 
+def sample(tree, sampling_method):
+    """
+    Samples from a tagged tree, by taking clades at random at duplication vetices
+
+    NOTE: must be run after 'tag()'
+
+    Parameters
+    ----------
+    tree: tagged treeswift tree
+    sampling_method: defines the number of samples
+                "linear" - the number of sample is the same as the duplication node
+                "exp" - the number of sample = 2^number of duplication node
+                custom method - takes as parameter the number of duplication nodes, and returns the number of samples
+
+    Returns samples as a list of trees
+    """
+    random.seed(0) # set fixed seed for reproducibility 
+    out = []
+    root = tree.root
+    if sampling_method == 'linear':
+        n_sample = tree.n_dup
+    elif sampling_method == 'exp':
+        n_sample = 2 ** tree.n_dup
+    else:
+        n_sample = sampling_method(tree.n_dup)
+    
+    for i in range(n_sample):
+        for node in tree.traverse_postorder(leaves=False):
+            if node.tag == 'D':
+                # deletes one randomly
+                node.delete = random.choice(node.child_nodes())
+                node.remove_child(node.delete)
+        out.append(treeswift.read_tree_newick(tree.newick()))
+        for node in tree.traverse_preorder(leaves=False):
+            if node.tag == 'D':
+                node.add_child(node.delete)
+    return out
+
+
 def trivial(newick_str):
     """
     Determines if a newick string represents a trivial tree (tree containing no quartets).
@@ -226,6 +271,8 @@ def main(args):
             tag(tree, args.delimiter)
             if args.trim:
                 out = [trim(tree)]
+            elif args.random_sample is not None:
+                out = sample(tree, args.rand_sampling_method)
             else:
                 out = decompose(tree, args.max_only, args.no_subsets)
             for t in out:
@@ -252,5 +299,8 @@ if __name__ == "__main__":
                         help="Do not include sections of tree that are subsets")
     parser.add_argument('-t', '--trim', action='store_true',
                         help="Trim duplicate leaves--otherwise decompose")
-
+    parser.add_argument('-r', '--random_sample', action='store_true',
+                        help="Samples single-copy trees from gene family trees")
+    parser.add_argument('-rm', '--rand_sampling_method', type=str,
+                        help="Method to determine the number of samples to take (linear/exp)", default='linear')
     main(parser.parse_args())
