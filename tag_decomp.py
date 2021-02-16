@@ -3,6 +3,7 @@ import argparse
 import random
 import copy
 
+
 def unroot(tree):
     """
     Unroots treeswift tree. Adapted from treeswift 'deroot' function.
@@ -67,7 +68,7 @@ def get_min_root(tree, delimiter=None):
     min_score, best_root = float("inf"), None
 
     # Get scores above edge pass
-     # Find root node, also label rest of nodes 'skip = False'
+    # Find root node, also label rest of nodes 'skip = False'
     for node in tree.traverse_preorder():
         if node.is_root():
             root = node
@@ -271,7 +272,7 @@ def main(args):
             tag(tree, args.delimiter)
             if args.trim:
                 out = [trim(tree)]
-            elif args.random_sample is not None:
+            elif args.random_sample:
                 out = sample(tree, args.rand_sampling_method)
             else:
                 out = decompose(tree, args.max_only, args.no_subsets)
@@ -303,4 +304,5 @@ if __name__ == "__main__":
                         help="Samples single-copy trees from gene family trees")
     parser.add_argument('-rm', '--rand_sampling_method', type=str,
                         help="Method to determine the number of samples to take (linear/exp)", default='linear')
+
     main(parser.parse_args())
