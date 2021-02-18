@@ -269,7 +269,7 @@ def main(args):
     with open(args.input, 'r') as fi, open(output, 'w') as fo:
         for line in fi:
             tree = treeswift.read_tree_newick(line)
-            tree.reroot(get_min_root(tree, args.delimiter))
+            tree.reroot(get_min_root(tree, args.delimiter, args.verbose))
             tag(tree, args.delimiter)
             if args.trim:
                 out = [trim(tree)]
@@ -305,5 +305,7 @@ if __name__ == "__main__":
                         help="Samples single-copy trees from gene family trees")
     parser.add_argument('-rm', '--rand_sampling_method', type=str,
                         help="Method to determine the number of samples to take (linear/exp)", default='linear')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help="Enables verbose output")
 
     main(parser.parse_args())

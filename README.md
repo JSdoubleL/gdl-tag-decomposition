@@ -26,6 +26,7 @@ python tag_decomp.py -i <input_file> -o <ouput_file> -d <delimiter>
 - `-s`: (optional) Discards duplicate clades that have leafsets which are subsets of their counterpart.
 - `-t`: (optional) Trims duplicate leaves under ever duplication vertex (instead of separating duplicate clades).
 - `-r`: (optional) Randomly samples single-copy trees from gene family trees
+- `-v`: (optional) Enable verbose output
 
 ### Example
 
