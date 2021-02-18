@@ -27,7 +27,7 @@ def unroot(tree):
     return tree
 
 
-def get_min_root(tree, delimiter=None):
+def get_min_root(tree, delimiter=None, verbose=False):
     """
     Calculates the root with the minimum score.
 
@@ -38,6 +38,18 @@ def get_min_root(tree, delimiter=None):
 
     Returns vertex corresponding to best edge to root tree on
     """
+
+    def score(total_set, set1, set2):
+        if not len(set1.intersection(set2)) == 0:
+                if total_set == set1 or total_set == set2:
+                    if set1 == set2:
+                        return 1
+                    else:
+                        return 2
+                else:
+                    return 3 
+        return 0
+
     # root tree if not rooted
     if tree.root.num_children() != 2:
         tree.reroot(tree.root)
@@ -54,21 +66,11 @@ def get_min_root(tree, delimiter=None):
 
             [left, right] = node.child_nodes()
             node.down = left.down.union(right.down)
-            node.d_score = left.d_score + right.d_score
+            node.d_score = left.d_score + right.d_score + score(node.down, left.down, right.down)
 
-            if not len(left.down.intersection(right.down)) == 0:
-                if node.down == left.down or node.down == right.down:
-                    if left.down == right.down:
-                        node.d_score += 1
-                    else:
-                        node.d_score += 2
-                else:
-                    node.d_score += 3
-
-    min_score, best_root = float("inf"), None
+    min_score, best_root, num_ties = float("inf"), None, 0
 
     # Get scores above edge pass
-    # Find root node, also label rest of nodes 'skip = False'
     for node in tree.traverse_preorder():
         if node.is_root():
             root = node
@@ -85,10 +87,10 @@ def get_min_root(tree, delimiter=None):
     left.skip = True
     right.skip = True
 
-    min_score = right.d_score + left.d_score
+    min_score = left.u_score + left.d_score + score(left.up.union(left.down), left.up, left.down)
     best_root = left 
 
-    for node in tree.traverse_preorder():
+    for node in tree.traverse_preorder(leaves=False):
         if not node.skip:
             
             parent = node.get_parent()
@@ -96,24 +98,23 @@ def get_min_root(tree, delimiter=None):
                 other = parent.child_nodes()[0]
             else: 
                 other = parent.child_nodes()[1]
-            # calculate up score
-            node.u_score = parent.u_score + other.d_score
-            
+
             node.up = parent.up.union(other.down)
-            # check for duplications
-            if not len(parent.up.intersection(other.down)) == 0:
-                if node.up == parent.up or node.up == other.down:
-                    if parent.up == other.down:
-                        node.u_score += 1
-                    else:
-                        node.u_score += 2
-                else:
-                    node.u_score += 3 
-            total_score = node.u_score + node.d_score
-            # check for possible min
+            node.u_score = parent.u_score + other.d_score + score(node.up, parent.up, other.down)
+
+            total_score = node.u_score + node.d_score + score(node.up.union(node.down), node.up, node.down)
+
+            if total_score == min_score:
+                num_ties += 1
+                
             if total_score < min_score:
+                num_ties = 0
                 min_score = total_score
                 best_root = node
+
+    if True or verbose:            
+        print('Best root had score', min_score, 'there were', num_ties, 'ties.')
+        
     return best_root
 
 
