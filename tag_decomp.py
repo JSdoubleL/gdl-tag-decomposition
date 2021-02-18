@@ -2,6 +2,7 @@ import treeswift
 import argparse
 import random
 import copy
+import sys
 
 
 def unroot(tree):
@@ -174,26 +175,29 @@ def decompose(tree, max_only=False, no_subsets=False):
     return out
 
 
-def trim(tree):
+def trim(tree, smallest=True):
     """
     Trims duplicate leaves under ever duplication vertex.
 
-    NOTE: This may be buggy. I haven't tested it enough.
+    NOTE: must be run after 'tag()'
 
-    Parameters:
+    Parameters
+    ----------
     tree: tagged treeswift tree
+    smallest: bool signifying that leaves should be trimmed from
+        the smallest clade, otherwise trimmed from the largest
 
     Returns a single tree with removed leaves
     """
-    
-    root = tree.root
+    tree = copy.deepcopy(tree)
+
     for node in tree.traverse_postorder(leaves=False):
         if node.tag == 'D':
             # trim only duplicate leaves from smallest subsection
             [left, right] = node.child_nodes()
             to_delete = left.s.intersection(right.s)
-            smallest = left if len(left.s) < len(right.s) else right
-            for v in smallest.traverse_postorder():
+            delete_from = left if (len(left.s) < len(right.s)) == smallest else right
+            for v in delete_from.traverse_postorder():
                 if v.s.issubset(to_delete) or (v.is_leaf() and v.label is None):
                     parent = v.get_parent()
                     parent.remove_child(v)
@@ -271,21 +275,26 @@ def main(args):
             tree = treeswift.read_tree_newick(line)
             tree.reroot(get_min_root(tree, args.delimiter, args.verbose))
             tag(tree, args.delimiter)
-            if args.trim:
+            # Choose modes
+            if args.trim or args.trim_both:
                 out = [trim(tree)]
+                if args.trim_both:
+                    out.append(trim(tree,False))
             elif args.random_sample:
                 out = sample(tree, args.rand_sampling_method)
             else:
                 out = decompose(tree, args.max_only, args.no_subsets)
+            # Output trees
             for t in out:
                 unroot(t)
                 t.suppress_unifurcations()
                 nwck = t.newick()
-                if not trivial(nwck):
+                if not trivial(nwck) or args.trivial:
                     fo.write(nwck + '\n')
             
 
 if __name__ == "__main__":
+    sys.setrecursionlimit(10000) # allow for deepcopying really large trees
 
     parser = argparse.ArgumentParser()
 
@@ -300,12 +309,16 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--no_subsets', action='store_true',
                         help="Do not include sections of tree that are subsets")
     parser.add_argument('-t', '--trim', action='store_true',
-                        help="Trim duplicate leaves--otherwise decompose")
+                        help="Trim duplicate leaves under each duplication event from smallest clade")
+    parser.add_argument('-tb', '--trim_both', action='store_true',
+                        help="Trim duplicate leaves under each duplication event. Gives two single copy trees (trimming from smallest/largest)")
     parser.add_argument('-r', '--random_sample', action='store_true',
                         help="Samples single-copy trees from gene family trees")
     parser.add_argument('-rm', '--rand_sampling_method', type=str,
                         help="Method to determine the number of samples to take (linear/exp)", default='linear')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help="Enables verbose output")
+    parser.add_argument("--trivial", action='store_true',
+                        help="Include trivial trees (trees without quartets) in output.")
 
     main(parser.parse_args())

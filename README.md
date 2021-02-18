@@ -24,7 +24,8 @@ python tag_decomp.py -i <input_file> -o <ouput_file> -d <delimiter>
 - `-d`: (optional) Delimiter separating species name from rest of leaf label. Default None.
 - `-m`: (optional) Output only single tree (discarding smallest duplicate clades).
 - `-s`: (optional) Discards duplicate clades that have leafsets which are subsets of their counterpart.
-- `-t`: (optional) Trims duplicate leaves under ever duplication vertex (instead of separating duplicate clades).
+- `-t`: (optional) Trim duplicate leaves under each duplication event from smallest clade.
+- `-tb`: (optional) Trim duplicate leaves under each duplication event. Gives two single copy trees (trimming from smallest/largest).
 - `-r`: (optional) Randomly samples single-copy trees from gene family trees
 - `-v`: (optional) Enable verbose output
 
