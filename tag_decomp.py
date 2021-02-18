@@ -112,7 +112,7 @@ def get_min_root(tree, delimiter=None, verbose=False):
                 min_score = total_score
                 best_root = node
 
-    if True or verbose:            
+    if verbose:            
         print('Best root had score', min_score, 'there were', num_ties, 'ties.')
         
     return best_root
