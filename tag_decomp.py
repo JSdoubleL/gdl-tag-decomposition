@@ -221,7 +221,7 @@ def sample(tree, sampling_method):
 
     Returns samples as a list of trees
     """
-    #random.seed(0) # set fixed seed for reproducibility 
+    random.seed(0) # set fixed seed for reproducibility 
     out = []
     root = tree.root
     if sampling_method == 'linear':
