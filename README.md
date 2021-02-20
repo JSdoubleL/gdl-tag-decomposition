@@ -27,6 +27,7 @@ python tag_decomp.py -i <input_file> -o <ouput_file> -d <delimiter>
 - `-t`: (optional) Trim duplicate leaves under each duplication event from smallest clade.
 - `-tb`: (optional) Trim duplicate leaves under each duplication event. Gives two single copy trees (trimming from smallest/largest).
 - `-r`: (optional) Randomly samples single-copy trees from gene family trees
+- `-rm`: (optional) Choose number of single copy trees per gene tree (used with `-r`). Options `linear`, `exp`, or number. (default: 5)
 - `-v`: (optional) Enable verbose output
 
 ### Example
