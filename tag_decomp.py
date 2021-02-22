@@ -130,20 +130,21 @@ def tag(tree, delimiter=None):
     """
     tree.suppress_unifurcations()
     tree.resolve_polytomies()
-    tree.n_dup = 0
     for node in tree.traverse_postorder():
         if node.is_leaf():
             node.s = set([node.get_label().split(delimiter)[0]])
+            node.n_dup = 0
         else:
             [left, right] = node.child_nodes()
 
             node.s = left.s.union(right.s)
-
+            node.n_dup = left.n_dup + right.n_dup
             if len(left.s.intersection(right.s)) == 0:
                 node.tag = 'S'
             else: 
                 node.tag = 'D'
-                tree.n_dup += 1
+                node.n_dup += 1
+    tree.n_dup = tree.root.n_dup
 
 
 def decompose(tree, max_only=False, no_subsets=False):
@@ -224,9 +225,11 @@ def sample(tree, sampling_method):
     out = []
     root = tree.root
     if sampling_method == 'linear':
-        n_sample = tree.n_dup
+        n_sample = tree.n_dup + 1
     elif sampling_method == 'exp':
         n_sample = 2 ** tree.n_dup
+    elif sampling_method.isdigit():
+        n_sample = int(sampling_method)
     else:
         n_sample = sampling_method(tree.n_dup)
     
@@ -234,7 +237,12 @@ def sample(tree, sampling_method):
         for node in tree.traverse_postorder(leaves=False):
             if node.tag == 'D':
                 # deletes one randomly
-                node.delete = random.choice(node.child_nodes())
+                [left, right] = node.child_nodes()
+                # we want to keep sections with more duplicates more often
+                # otherwise we can end up getting the same small tree repeatedly
+                bias = (left.n_dup + 0.5) / node.n_dup
+                node.delete = left if random.random() > bias else right
+                #node.delete = random.choice(node.child_nodes())
                 node.remove_child(node.delete)
         out.append(treeswift.read_tree_newick(tree.newick()))
         for node in tree.traverse_preorder(leaves=False):
@@ -317,7 +325,7 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--random_sample', action='store_true',
                         help="Samples single-copy trees from gene family trees")
     parser.add_argument('-rm', '--rand_sampling_method', type=str,
-                        help="Method to determine the number of samples to take (linear/exp)", default='linear')
+                        help="Method to determine the number of samples to take (linear/exp/[number])", default='5')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help="Enables verbose output")
     parser.add_argument("--trivial", action='store_true',
