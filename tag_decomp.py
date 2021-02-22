@@ -284,14 +284,20 @@ def main(args):
             # skip trees with two or less leaves
             if len([l for l in tree.traverse_postorder(internal=False)]) <= 2:
                 continue
+
             root, score, ties = get_min_root(tree, args.delimiter)
             tree.reroot(root)
             tag(tree, args.delimiter)
+
             if args.verbose:
-                outgroup = min((len(child.s), child.s) for child in tree.root.child_nodes())
-                print('Tree ', i, ': Best root had score ', score, ' with ', tree.n_dup, ' duplications; ',
-                'there were ', ties, ' ties.',
-                '\nOutgroup: {',','.join(outgroup[1]),'}', sep='')
+                if tree.n_dup > 0:
+                    outgroup = min((len(child.s), child.s) for child in tree.root.child_nodes())
+                    print('Tree ', i, ': Best root had score ', score, ' with ', tree.n_dup, ' duplications; ',
+                    'there were ', ties, ' ties.',
+                    '\nOutgroup: {',','.join(outgroup[1]),'}\n', sep='')
+                else:
+                    print('Tree ', i, ': Single-Copy\n', sep='')
+
             # Choose modes
             if args.trim or args.trim_both:
                 out = [trim(tree)]
@@ -301,6 +307,7 @@ def main(args):
                 out = sample(tree, args.rand_sampling_method)
             else:
                 out = decompose(tree, args.max_only, args.no_subsets)
+
             # Output trees
             for t in out:
                 unroot(t)
