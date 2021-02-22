@@ -271,7 +271,9 @@ def main(args):
         output = args.output
 
     with open(args.input, 'r') as fi, open(output, 'w') as fo:
-        for line in fi:
+        for i, line in enumerate(fi):
+            if args.verbose:
+                print('Tree', i, end=': ')
             tree = treeswift.read_tree_newick(line)
             tree.reroot(get_min_root(tree, args.delimiter, args.verbose))
             tag(tree, args.delimiter)
