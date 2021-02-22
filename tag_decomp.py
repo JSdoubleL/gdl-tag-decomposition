@@ -116,7 +116,7 @@ def get_min_root(tree, delimiter=None, verbose=False):
     if verbose:            
         print('Best root had score', min_score, 'there were', num_ties, 'ties.')
         
-    return best_root
+    return best_root, min_score, num_ties
 
 
 def tag(tree, delimiter=None):
@@ -279,12 +279,19 @@ def main(args):
         output = args.output
 
     with open(args.input, 'r') as fi, open(output, 'w') as fo:
-        for i, line in enumerate(fi):
-            if args.verbose:
-                print('Tree', i, end=': ')
+        for i, line in enumerate(fi, 1):
             tree = treeswift.read_tree_newick(line)
-            tree.reroot(get_min_root(tree, args.delimiter, args.verbose))
+            # skip trees with two or less leaves
+            if len([l for l in tree.traverse_postorder(internal=False)]) <= 2:
+                continue
+            root, score, ties = get_min_root(tree, args.delimiter)
+            tree.reroot(root)
             tag(tree, args.delimiter)
+            if args.verbose:
+                outgroup = min((len(child.s), child.s) for child in tree.root.child_nodes())
+                print('Tree ', i, ': Best root had score ', score, ' with ', tree.n_dup, ' duplications; ',
+                'there were ', ties, ' ties.',
+                '\nOutgroup: {',','.join(outgroup[1]),'}', sep='')
             # Choose modes
             if args.trim or args.trim_both:
                 out = [trim(tree)]
