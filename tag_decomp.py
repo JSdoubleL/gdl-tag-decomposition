@@ -306,7 +306,7 @@ def main(args):
             if args.verbose:
                 if tree.n_dup > 0:
                     outgroup = min((len(child.s), child.s) for child in tree.root.child_nodes())
-                    print('Tree ', i, ': Best root had score ', score, ' with ', tree.n_dup, ' duplications; ',
+                    print('Tree ', i, ': Tree has ', len(tree.root.s), ' species.\nBest root had score ', score, ' with ', tree.n_dup, ' duplications; ',
                     'there were ', len(ties), ' ties.',
                     '\nOutgroup: {',','.join(outgroup[1]),'}', sep='')
                 else:
