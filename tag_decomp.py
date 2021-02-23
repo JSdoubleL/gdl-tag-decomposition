@@ -69,7 +69,7 @@ def get_min_root(tree, delimiter=None, verbose=False):
             node.down = left.down.union(right.down)
             node.d_score = left.d_score + right.d_score + score(node.down, left.down, right.down)
 
-    min_score, best_root, num_ties = float("inf"), None, 0
+    min_score, best_root, ties = float("inf"), None, []
 
     # Get scores above edge pass
     for node in tree.traverse_preorder():
@@ -89,7 +89,15 @@ def get_min_root(tree, delimiter=None, verbose=False):
     right.skip = True
 
     min_score = left.u_score + left.d_score + score(left.up.union(left.down), left.up, left.down)
-    best_root = left 
+    # we don't want to root at a leaf
+    if not left.is_leaf():
+        best_root = left 
+    elif not right.is_leaf():
+        best_root = right
+    # if both are leaves (i.e. two leaf tree), we want to keep the same rooting
+    else:
+        best_root = root
+    ties = [best_root]
 
     for node in tree.traverse_preorder(leaves=False):
         if not node.skip:
@@ -106,17 +114,18 @@ def get_min_root(tree, delimiter=None, verbose=False):
             total_score = node.u_score + node.d_score + score(node.up.union(node.down), node.up, node.down)
 
             if total_score == min_score:
-                num_ties += 1
+                ties.append(node)
                 
             if total_score < min_score:
                 num_ties = 0
                 min_score = total_score
                 best_root = node
+                ties = [node]
 
     if verbose:            
-        print('Best root had score', min_score, 'there were', num_ties, 'ties.')
+        print('Best root had score', min_score, 'there were', len(ties), 'ties.')
         
-    return best_root, min_score, num_ties
+    return best_root, min_score, ties
 
 
 def tag(tree, delimiter=None):
@@ -278,22 +287,27 @@ def main(args):
     else:
         output = args.output
 
+    # delete existing outgroup file (so you don't append to it)
+    outgroup_file_name = args.input.rsplit('.', 1)[0] + '_outgroups.txt'
+    if args.outgroups:
+        open(outgroup_file_name, 'w').close()
+
     with open(args.input, 'r') as fi, open(output, 'w') as fo:
         for i, line in enumerate(fi, 1):
             tree = treeswift.read_tree_newick(line)
-            # skip trees with two or less leaves
-            if len([l for l in tree.traverse_postorder(internal=False)]) <= 2:
-                continue
 
             root, score, ties = get_min_root(tree, args.delimiter)
             tree.reroot(root)
             tag(tree, args.delimiter)
 
+            if args.outgroups:
+                og_tree = copy.deepcopy(tree)
+
             if args.verbose:
                 if tree.n_dup > 0:
                     outgroup = min((len(child.s), child.s) for child in tree.root.child_nodes())
                     print('Tree ', i, ': Best root had score ', score, ' with ', tree.n_dup, ' duplications; ',
-                    'there were ', ties, ' ties.',
+                    'there were ', len(ties), ' ties.',
                     '\nOutgroup: {',','.join(outgroup[1]),'}\n', sep='')
                 else:
                     print('Tree ', i, ': Single-Copy\n', sep='')
@@ -315,6 +329,15 @@ def main(args):
                 nwck = t.newick()
                 if not trivial(nwck) or args.trivial:
                     fo.write(nwck + '\n')
+            
+            # output outgroups
+            if args.outgroups:
+                with open(outgroup_file_name, 'a') as outgfile:
+                    outgfile.write('Tree ' + str(i) + ':\n')
+                    for t in ties:
+                        og_tree.reroot(t)
+                        outgroup = min((len(child.s), child.s) for child in og_tree.root.child_nodes())
+                        outgfile.write('{' + ','.join(outgroup[1]) + '}\n')
             
 
 if __name__ == "__main__":
@@ -344,5 +367,7 @@ if __name__ == "__main__":
                         help="Enables verbose output")
     parser.add_argument("--trivial", action='store_true',
                         help="Include trivial trees (trees without quartets) in output.")
+    parser.add_argument("--outgroups", action='store_true',
+                        help="Output outgroups to file (including ties)")
 
     main(parser.parse_args())
