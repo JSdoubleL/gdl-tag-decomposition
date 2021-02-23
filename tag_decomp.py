@@ -308,9 +308,9 @@ def main(args):
                     outgroup = min((len(child.s), child.s) for child in tree.root.child_nodes())
                     print('Tree ', i, ': Best root had score ', score, ' with ', tree.n_dup, ' duplications; ',
                     'there were ', len(ties), ' ties.',
-                    '\nOutgroup: {',','.join(outgroup[1]),'}\n', sep='')
+                    '\nOutgroup: {',','.join(outgroup[1]),'}', sep='')
                 else:
-                    print('Tree ', i, ': Single-Copy\n', sep='')
+                    print('Tree ', i, ': Single-Copy', sep='')
 
             # Choose modes
             if args.trim or args.trim_both:
@@ -323,13 +323,18 @@ def main(args):
                 out = decompose(tree, args.max_only, args.no_subsets)
 
             # Output trees
+            num_output = 0
             for t in out:
                 unroot(t)
                 t.suppress_unifurcations()
                 nwck = t.newick()
                 if not trivial(nwck) or args.trivial:
+                    num_output += 1
                     fo.write(nwck + '\n')
             
+            if args.verbose:
+                print('Decomposition strategy outputted', num_output, 'non-trivial tree(s).\n' if not args.trivial else 'tree(s).\n')
+
             # output outgroups
             if args.outgroups:
                 with open(outgroup_file_name, 'a') as outgfile:
