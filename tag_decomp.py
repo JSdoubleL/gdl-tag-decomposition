@@ -339,7 +339,7 @@ def main(args):
                 print('Decomposition strategy outputted', num_output, 'non-trivial tree(s).\n' if not args.trivial else 'tree(s).\n')
 
             # output outgroups
-            if args.outgroups:
+            if args.outgroups and len(og_tree.root.s) >= 2 and og_tree.n_dup >= 1:
                 with open(outgroup_file_name, 'a') as outgfile:
                     outgfile.write('Tree ' + str(i) + ':\n')
                     for t in ties:
