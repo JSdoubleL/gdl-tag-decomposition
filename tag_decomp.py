@@ -304,13 +304,16 @@ def main(args):
                 og_tree = copy.deepcopy(tree)
 
             if args.verbose:
-                if tree.n_dup > 0:
-                    outgroup = min((len(child.s), child.s) for child in tree.root.child_nodes())
-                    print('Tree ', i, ': Tree has ', len(tree.root.s), ' species.\nBest root had score ', score, ' with ', tree.n_dup, ' duplications; ',
+                print('Tree ', i, ': Tree has ', len(tree.root.s), ' species.', sep='')
+                if tree.n_dup == 0:
+                    print('Single-Copy')    
+                elif len(tree.root.s) < 2:
+                    print('Uninformative')               
+                else:
+                    outgroup = min((len(child.s), child.s) for child in tree.root.child_nodes())                    
+                    print('Best root had score ', score, ' with ', tree.n_dup, ' duplications; ',
                     'there were ', len(ties), ' ties.',
                     '\nOutgroup: {',','.join(outgroup[1]),'}', sep='')
-                else:
-                    print('Tree ', i, ': Single-Copy', sep='')
 
             # Choose modes
             if args.trim or args.trim_both:
