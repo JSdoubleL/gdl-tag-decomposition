@@ -34,6 +34,7 @@ python tag_decomp.py -i <input_file> -o <ouput_file> -d <delimiter>
 - `-r`: Randomly samples single-copy trees from gene family trees
 - `-rm`: Choose number of single copy trees per gene tree (used with `-r`). Options `linear`, `exp`, or number. (default: 5)
 - `-v`: Enable verbose output
+- `-rp`: Remove in-paralogs before rooting/scoring
 - `--trivial`: Includes trivial trees in decomposition output
 - `--outgroups`: Write outgroups (including ties) to txt file. (Might make program slower).
 

@@ -28,6 +28,53 @@ def unroot(tree):
     return tree
 
 
+def remove_in_paralogs(tree, delimiter=None):
+    """
+    Removes in-paralogs from unrooted tree.
+
+    Parameters
+    ----------
+    tree: treeswift tree
+    delimiter: delimiter separating species name from rest of leaf label
+
+    Returns number of in-paralogs removed
+    """
+    # root tree if not rooted
+    if tree.root.num_children() != 2:
+        tree.reroot(tree.root)
+
+    num_paralogs = 0
+    for node in tree.traverse_postorder():
+        if node.is_leaf():
+            node.s = set([node.get_label().split(delimiter)[0]])
+        else:
+            node.s = set([])
+            for child in node.child_nodes():
+                node.s = node.s.union(child.s)
+            # collapse if paralogs
+            if len(node.s) == 1:
+                for child in node.child_nodes()[1:]:
+                    node.remove_child(child)
+                    num_paralogs += 1
+
+    # check over top of root
+    if any(len(child.s) == 1 for child in tree.root.child_nodes()):
+        for node in tree.traverse_preorder():
+            if not node.is_root():
+                parent = node.get_parent()
+                node.up = set([]) if parent.is_root() else parent.up
+                for sibl in parent.child_nodes():
+                    if sibl != node:
+                        node.up.union(sibl.s)
+                if len(node.up) == 1:
+                    for sibl in parent.child_nodes():
+                        if sibl != node:
+                            parent.remove_child(sibl)
+                            num_paralogs += 1
+    tree.suppress_unifurcations()
+    return num_paralogs
+
+
 def get_min_root(tree, delimiter=None, verbose=False):
     """
     Calculates the root with the minimum score.
@@ -50,6 +97,11 @@ def get_min_root(tree, delimiter=None, verbose=False):
                 else:
                     return 3 
         return 0
+
+    # check if tree is single leaf
+    if tree.root.num_children() == 0:
+        tree.root.s = set([tree.root.get_label()])
+        return tree.root, 0, [] 
 
     # root tree if not rooted
     if tree.root.num_children() != 2:
@@ -296,6 +348,9 @@ def main(args):
         for i, line in enumerate(fi, 1):
             tree = treeswift.read_tree_newick(line)
 
+            if args.remove_in_paralogs:
+                num_paralogs = remove_in_paralogs(tree, args.delimiter)
+
             root, score, ties = get_min_root(tree, args.delimiter)
             tree.reroot(root)
             tag(tree, args.delimiter)
@@ -305,10 +360,12 @@ def main(args):
 
             if args.verbose:
                 print('Tree ', i, ': Tree has ', len(tree.root.s), ' species.', sep='')
-                if tree.n_dup == 0:
-                    print('Single-Copy')    
-                elif len(tree.root.s) < 2:
-                    print('Uninformative')               
+                if args.remove_in_paralogs:
+                    print(num_paralogs, 'in-paralogs removed prior to rooting/scoring.')  
+                if len(tree.root.s) < 2:
+                    print('Uninformative')
+                elif tree.n_dup == 0:
+                    print('Single-Copy')                 
                 else:
                     outgroup = min((len(child.s), child.s) for child in tree.root.child_nodes())                    
                     print('Best root had score ', score, ' with ', tree.n_dup, ' duplications; ',
@@ -377,5 +434,7 @@ if __name__ == "__main__":
                         help="Include trivial trees (trees without quartets) in output.")
     parser.add_argument("--outgroups", action='store_true',
                         help="Output outgroups to file (including ties)")
+    parser.add_argument('-rp', "--remove_in_paralogs", action='store_true',
+                        help="Remove in-paralogs before rooting/scoring tree.")
 
     main(parser.parse_args())
