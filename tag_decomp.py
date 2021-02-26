@@ -369,8 +369,7 @@ def main(args):
                 else:
                     outgroup = min((len(child.s), child.s) for child in tree.root.child_nodes())                    
                     print('Best root had score ', score, ' with ', tree.n_dup, ' non-terminal' if args.remove_in_paralogs else '',
-                    ' duplications; there were ', len(ties), ' ties.',
-                    '\nOutgroup: {',','.join(outgroup[1]),'}', sep='')
+                        ' duplications; there were ', len(ties), ' ties.\nOutgroup: {',','.join(outgroup[1]),'}', sep='')
 
             # Choose modes
             if args.trim or args.trim_both:
