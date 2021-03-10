@@ -208,7 +208,7 @@ def tag(tree, delimiter=None):
     tree.n_dup = tree.root.n_dup
 
 
-def decompose(tree, max_only=False, no_subsets=False):
+def decompose(tree, max_only=False, no_subsets=False, in_place=True):
     """
     Decomposes a tagged tree, by separating clades at duplication vetices
 
@@ -222,6 +222,9 @@ def decompose(tree, max_only=False, no_subsets=False):
 
     Returns result of the decomposition as a list of trees
     """
+    if not in_place:
+        tree = copy.deepcopy(tree)
+        
     out = []
     root = tree.root
     for node in tree.traverse_postorder(leaves=False):
@@ -237,7 +240,7 @@ def decompose(tree, max_only=False, no_subsets=False):
     return out
 
 
-def trim(tree, smallest=True):
+def trim(tree, smallest=True, in_place=True):
     """
     Trims duplicate leaves under ever duplication vertex.
 
@@ -251,7 +254,8 @@ def trim(tree, smallest=True):
 
     Returns a single tree with removed leaves
     """
-    tree = copy.deepcopy(tree)
+    if not in_place:
+        tree = copy.deepcopy(tree)
 
     for node in tree.traverse_postorder(leaves=False):
         if node.tag == 'D':
@@ -266,7 +270,7 @@ def trim(tree, smallest=True):
     return tree
 
 
-def sample(tree, sampling_method):
+def sample(tree, sampling_method, in_place=True):
     """
     Samples from a tagged tree, by taking clades at random at duplication vetices
 
@@ -282,6 +286,9 @@ def sample(tree, sampling_method):
 
     Returns samples as a list of trees
     """
+    if not in_place:
+        tree = copy.deepcopy(tree)
+
     random.seed(0) # set fixed seed for reproducibility 
     out = []
     root = tree.root
@@ -372,14 +379,16 @@ def main(args):
                         ' duplications; there were ', len(ties), ' ties.\nOutgroup: {',','.join(outgroup[1]),'}', sep='')
 
             # Choose modes
+            in_place = len([i for i in [args.decompose, args.trim, args.trim_both, args.random_sample] if i]) <= 1
+            out = []
             if args.trim or args.trim_both:
-                out = [trim(tree)]
+                out = [trim(tree, in_place=(in_place and not args.trim_both))]
                 if args.trim_both:
-                    out.append(trim(tree,False))
-            elif args.random_sample:
-                out = sample(tree, args.rand_sampling_method)
-            else:
-                out = decompose(tree, args.max_only, args.no_subsets)
+                    out.append(trim(tree,False, False))
+            if args.random_sample:
+                out.extend(sample(tree, args.rand_sampling_method, in_place=in_place))
+            if args.decompose or len(out) == 0:
+                out.extend(decompose(tree, args.max_only, args.no_subsets, in_place=in_place))
 
             # Output trees
             num_output = 0
@@ -435,5 +444,7 @@ if __name__ == "__main__":
                         help="Output outgroups to file (including ties)")
     parser.add_argument('-rp', "--remove_in_paralogs", action='store_true',
                         help="Remove in-paralogs before rooting/scoring tree.")
+    parser.add_argument("--decompose", action='store_true',
+                        help="default decomposition strategy--argument for combining with other methods")
 
     main(parser.parse_args())
