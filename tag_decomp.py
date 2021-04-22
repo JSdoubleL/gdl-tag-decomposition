@@ -372,19 +372,22 @@ def main(args):
                         ' duplications; there were ', len(ties), ' ties.\nOutgroup: {',','.join(outgroup[1]),'}', sep='')
 
             # Choose modes
-            if args.trim or args.trim_both:
-                out = [trim(tree)]
-                if args.trim_both:
-                    out.append(trim(tree,False))
-            elif args.random_sample:
-                out = sample(tree, args.rand_sampling_method)
+            if args.no_decomp:
+                out = [tree]
             else:
-                out = decompose(tree, args.max_only, args.no_subsets)
+                if args.trim or args.trim_both:
+                    out = [trim(tree)]
+                    if args.trim_both:
+                        out.append(trim(tree,False))
+                elif args.random_sample:
+                    out = sample(tree, args.rand_sampling_method)
+                else:
+                    out = decompose(tree, args.max_only, args.no_subsets)
 
             # Output trees
             num_output = 0
             for t in out:
-                unroot(t)
+                if not args.no_decomp: unroot(t)
                 t.suppress_unifurcations()
                 nwck = t.newick()
                 if not trivial(nwck) or args.trivial:
@@ -415,6 +418,8 @@ if __name__ == "__main__":
                         help="Output tree list file")
     parser.add_argument('-d', "--delimiter", type=str, 
                         help="Delimiter separating species name from rest of leaf label")
+    parser.add_argument('-n', '--no-decomp', action='store_true', 
+                        help="Outputs rooted trees without decomposition")
     parser.add_argument('-m', '--max_only', action='store_true',
                         help="Only output maximum tree")
     parser.add_argument('-s', '--no_subsets', action='store_true',
