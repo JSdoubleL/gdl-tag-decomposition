@@ -355,9 +355,6 @@ def main(args):
             tree.reroot(root)
             tag(tree, args.delimiter)
 
-            if args.outgroups:
-                og_tree = copy.deepcopy(tree)
-
             if args.verbose:
                 print('Tree ', i, ': Tree has ', len(tree.root.s), ' species.', sep='')
                 if args.remove_in_paralogs:
@@ -398,13 +395,19 @@ def main(args):
                 print('Decomposition strategy outputted', num_output, 'non-trivial tree(s).\n' if not args.trivial else 'tree(s).\n')
 
             # output outgroups
-            if args.outgroups and len(og_tree.root.s) >= 2 and og_tree.n_dup >= 1:
-                with open(outgroup_file_name, 'a') as outgfile:
-                    outgfile.write('Tree ' + str(i) + ':\n')
-                    for t in ties:
-                        og_tree.reroot(t)
-                        outgroup = min((len(child.s), child.s) for child in og_tree.root.child_nodes())
-                        outgfile.write('{' + ','.join(outgroup[1]) + '}\n')
+            if args.outgroups:
+                og_tree = treeswift.read_tree_newick(line)
+                root, score, ties = get_min_root(og_tree, args.delimiter)
+                og_tree.reroot(root)
+                tag(og_tree, args.delimiter)
+                if len(og_tree.root.s) >= 2 and og_tree.n_dup >= 1:
+                    with open(outgroup_file_name, 'a') as outgfile:
+                        outgfile.write('Tree ' + str(i) + ':\n')
+                        for t in ties:
+                            og_tree.reroot(t)
+                            tag(og_tree, args.delimiter)
+                            outgroup = min((len(child.s), child.s) for child in og_tree.root.child_nodes())
+                            outgfile.write('{' + ','.join(outgroup[1]) + '}\n')
             
 
 if __name__ == "__main__":
